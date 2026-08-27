@@ -1,0 +1,10 @@
+-r requirements.txt
+dvc
+dvc-s3
+mlflow
+dagshub
+pytest
+awscli
+seaborn
+matplotlib
+pyyaml

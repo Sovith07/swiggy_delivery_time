@@ -128,7 +128,6 @@ pyparsing
 python-dateutil
 python-dotenv
 pytz
-pywin32
 PyYAML
 requests
 requests-toolbelt

@@ -31,3 +31,32 @@ stages:
     outs:
       - data/preprocessed/train.csv
       - data/preprocessed/test.csv
+
+  train_model:
+    cmd: python src/models/train_model.py
+    params:
+      - train_model.XGBoost
+      - train_model.LightGBM
+    deps:
+      - src/models/train_model.py
+      - data/preprocessed/train.csv
+      - data/preprocessed/test.csv
+    outs:
+      - models/stacking_regressor.joblib
+      - models/model.joblib
+      - models/power_transformer.joblib
+
+  evaluate_model:
+    cmd: python src/models/evaluate_model.py
+    deps:
+      - src/models/evaluate_model.py
+      - models/stacking_regressor.joblib
+      - models/model.joblib
+      - models/power_transformer.joblib
+      - data/preprocessed/train.csv
+      - data/preprocessed/test.csv
+
+  register_model:
+    cmd: python src/models/register_model.py
+    deps:
+      - src/models/register_model.py

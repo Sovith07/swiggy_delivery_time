@@ -2,3 +2,27 @@ data_preperation:
   test_size: 0.25
   random_state: 42
 
+train_model:
+  XGBoost:
+    n_estimators: 716
+    max_depth: 10
+    learning_rate: 0.022190849275494005
+    subsample: 0.9618348256588674
+    colsample_bytree: 0.9650165052381436
+    min_child_weight: 10
+    gamma: 0.18799990841416653
+    reg_alpha: 6.869029486168006
+    reg_lambda: 72.93886465167222
+  
+  LightGBM:
+    n_estimators: 299
+    num_leaves: 248
+    max_depth: 8
+    learning_rate: 0.03729183624689535
+    subsample: 0.895141805809691
+    subsample_freq: 4
+    colsample_bytree: 0.7713458848920105
+    min_child_samples: 87
+    min_split_gain: 0.007301324238588258
+    reg_alpha: 0.014583794812235817
+    reg_lambda: 0.4055697568621698

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import joblib
 import logging
@@ -8,13 +9,19 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_absolute_error, r2_score
 import json
 
+dagshub_token = os.getenv("DAGSHUB_PAT")
+if not dagshub_token:
+    raise EnvironmentError("DAGSHUB_PAT environment variable is not set")
 
-# initialize dagshub
-import dagshub
-dagshub.init(repo_owner='Sovith07', repo_name='swiggy_delivery_time', mlflow=True)
+os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
-# set the mlflow tracking server
-mlflow.set_tracking_uri("https://dagshub.com/Sovith07/swiggy_delivery_time.mlflow")
+dagshub_url = "https://dagshub.com"  
+repo_owner = "Sovith07"
+repo_name = "swiggy_delivery_time"
+
+mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
+
 
 # set mlflow experment name
 mlflow.set_experiment("DVC Pipeline")

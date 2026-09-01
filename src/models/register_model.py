@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from mlflow import MlflowClient
 import logging
-
+import os
 
 # create logger
 logger = logging.getLogger("register_model")
@@ -26,10 +26,18 @@ handler.setFormatter(formatter)
 import dagshub
 import mlflow.client
 import dagshub
-dagshub.init(repo_owner='Sovith07', repo_name='swiggy_delivery_time', mlflow=True)
+dagshub_token = os.getenv("DAGSHUB_PAT")
+if not dagshub_token:
+    raise EnvironmentError("DAGSHUB_PAT environment variable is not set")
 
-# set the mlflow tracking server
-mlflow.set_tracking_uri("https://dagshub.com/Sovith07/swiggy_delivery_time.mlflow")
+os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+
+dagshub_url = "https://dagshub.com"  
+repo_owner = "Sovith07"
+repo_name = "swiggy_delivery_time"
+
+mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
 
 
 def load_model_information(file_path):

@@ -39,7 +39,7 @@ root_path = Path(__file__).parent.parent
 
 
 test_data_path = (
-    root_path / "data" / "processed" / "test.csv"
+    root_path / "data" / "preprocessed" / "test.csv"
 )
 
 

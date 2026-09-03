@@ -39,7 +39,7 @@ import mlflow
 
 model_name = "delivery_time_pred_model"
 
-model = mlflow.pyfunc.load_model(
+model = mlflow.sklearn.load_model(
     f"models:/{model_name}/staging"
 )
 # set the root path

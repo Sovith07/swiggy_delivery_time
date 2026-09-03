@@ -42,7 +42,7 @@ preprocessor_path = (
 )
 
 test_data_path = (
-    root_path / "data" / "preprocessed" / "test.csv"
+    root_path / "data" / "processed" / "test.csv"
 )
 
 

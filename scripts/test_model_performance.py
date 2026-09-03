@@ -37,9 +37,6 @@ mlflow.set_tracking_uri(
 
 root_path = Path(__file__).parent.parent
 
-preprocessor_path = (
-    root_path / "models" / "preprocessor.joblib"
-)
 
 test_data_path = (
     root_path / "data" / "processed" / "test.csv"
@@ -50,7 +47,7 @@ test_data_path = (
 # Load preprocessor
 # --------------------------------
 
-preprocessor = joblib.load(preprocessor_path)
+
 
 
 # --------------------------------
@@ -78,10 +75,10 @@ def test_model_performance():
     y = df["time_taken"]
 
     # Preprocess features
-    X_processed = preprocessor.transform(X)
+    
 
     # Predict
-    y_pred = model.predict(X_processed)
+    y_pred = model.predict(X)
 
     # Calculate MAE
     mean_error = mean_absolute_error(y, y_pred)

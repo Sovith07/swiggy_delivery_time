@@ -1,13 +1,17 @@
 import pytest
-import pandas as pd
-import pickle
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import mlflow
+import dagshub
+import json
+from pathlib import Path
+from sklearn.pipeline import Pipeline
+import joblib
+import pandas as pd
+from sklearn.metrics import mean_absolute_error
 import os
 
 dagshub_token = os.getenv("DAGSHUB_PAT")
 if not dagshub_token:
-    raise EnvironmentError("DAGSHUB_PAT environment variable is not set")
+  raise EnvironmentError("DAGSHUB_PAT environment variable is not set")
 
 os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
 os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
@@ -18,60 +22,64 @@ repo_name = "swiggy_delivery_time"
 
 mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
 
-@pytest.mark.parametrize("model_name, stage, holdout_data_path, vectorizer_path", [
-    ("delivery_time_pred_model", "staging", "data/preprocessed/test_processed.csv", "tfidf_vectorizer.pkl"),  # Replace with your actual paths
+
+def load_model_information(file_path):
+    with open(file_path) as f:
+        run_info = json.load(f)
+        
+    return run_info
+
+
+def load_transformer(transformer_path):
+    transformer = joblib.load(transformer_path)
+    return transformer
+
+# set model name
+import mlflow
+
+model_name = "delivery_time_pred_model"
+
+model = mlflow.pyfunc.load_model(
+    f"models:/{model_name}/staging"
+)
+# set the root path
+root_path = Path(__file__).parent.parent
+
+# load the preprocessor
+preprocessor_path = root_path / "models" / "preprocessor.joblib"
+preprocessor = load_transformer(preprocessor_path)
+
+
+# build the model pipeline
+model_pipe = Pipeline(steps=[
+    ('preprocess',preprocessor),
+    ("regressor",model)
 ])
-def test_model_performance(model_name, stage, holdout_data_path, vectorizer_path):
-    try:
-        # Load the model from MLflow
-        client = mlflow.tracking.MlflowClient()
-        latest_version_info = client.get_latest_versions(model_name, stages=[stage])
-        latest_version = latest_version_info[0].version if latest_version_info else None
 
-        assert latest_version is not None, f"No model found in the '{stage}' stage for '{model_name}'"
+test_data_path = root_path / "data" / "preprocessed" / "test.csv"
 
-        model_uri = f"models:/{model_name}/{latest_version}"
-        model = mlflow.pyfunc.load_model(model_uri)
-
-        # Load the vectorizer
-        with open(vectorizer_path, 'rb') as file:
-            vectorizer = pickle.load(file)
-
-        # Load the holdout test data
-        holdout_data = pd.read_csv(holdout_data_path)
-        X_holdout_raw = holdout_data.iloc[:, :-1].squeeze()  # Raw text features (assuming text is in the first column)
-        y_holdout = holdout_data.iloc[:, -1]  # Labels
-
-        # Handle NaN values in the text data
-        X_holdout_raw = X_holdout_raw.fillna("")
-
-        # Apply TF-IDF transformation
-        X_holdout_tfidf = vectorizer.transform(X_holdout_raw)
-        X_holdout_tfidf_df = pd.DataFrame(X_holdout_tfidf.toarray(), columns=vectorizer.get_feature_names_out())
-
-        # Predict using the model
-        y_pred_new = model.predict(X_holdout_tfidf_df)
-
-        # Calculate performance metrics
-        accuracy_new = accuracy_score(y_holdout, y_pred_new)
-        precision_new = precision_score(y_holdout, y_pred_new, average='weighted', zero_division=1)
-        recall_new = recall_score(y_holdout, y_pred_new, average='weighted', zero_division=1)
-        f1_new = f1_score(y_holdout, y_pred_new, average='weighted', zero_division=1)
-
-
-        # Define expected thresholds for the performance metrics
-        expected_accuracy = 0.40
-        expected_precision = 0.40
-        expected_recall = 0.40
-        expected_f1 = 0.40
-
-        # Assert that the new model meets the performance thresholds
-        assert accuracy_new >= expected_accuracy, f'Accuracy should be at least {expected_accuracy}, got {accuracy_new}'
-        assert precision_new >= expected_precision, f'Precision should be at least {expected_precision}, got {precision_new}'
-        assert recall_new >= expected_recall, f'Recall should be at least {expected_recall}, got {recall_new}'
-        assert f1_new >= expected_f1, f'F1 score should be at least {expected_f1}, got {f1_new}'
-
-        print(f"Performance test passed for model '{model_name}' version {latest_version}")
-
-    except Exception as e:
-        pytest.fail(f"Model performance test failed with error: {e}")
+@pytest.mark.parametrize(argnames="model_pipe, test_data_path, threshold_error",
+                        argvalues=[(model_pipe, test_data_path, 5)])
+def test_model_performance(model_pipe,test_data_path,threshold_error):
+    # load test data
+    df = pd.read_csv(test_data_path)
+    
+    # drop the missing values
+    df.dropna(inplace=True)
+    
+    # make X and y
+    X = df.drop(columns=["time_taken"])
+    y = df['time_taken']
+    
+    # get the predictions
+    y_pred = model_pipe.predict(X)
+    
+    # calculate the mean error
+    mean_error = mean_absolute_error(y,y_pred)
+    
+    # check for performance
+    assert mean_error <= threshold_error, f"The model does not pass the performance threshold of {threshold_error} minutes"
+    print("The avg error is", mean_error)
+    
+    print(f"The {model_name} model passed the performance test")
+    

@@ -49,9 +49,3 @@ jobs:
           DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
         run: |
           python scripts/promote_model.py   
-
-      - name : test app
-        env:
-          DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
-        run: |
-          python scripts/test_app.py

@@ -32,3 +32,26 @@ jobs:
           DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
         run: |
           dvc repro
+
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+
+      - name: Model performance
+        env:
+          DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
+        run: |
+          pytest scripts/test_model_performance.py
+
+      - name : Promote model
+        env:
+          DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
+        run: |
+          python scripts/promote_model.py   
+
+      - name : test app
+        env:
+          DAGSHUB_PAT: ${{ secrets.DAGSHUB_PAT }}
+        run: |
+          python scripts/test_app.py

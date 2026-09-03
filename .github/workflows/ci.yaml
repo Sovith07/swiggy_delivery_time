@@ -64,3 +64,35 @@ jobs:
       - name: Push Docker Image
         run: |
          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/swiggy_delivery:v2
+
+      # 5. Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+
+            # Login to Docker Hub
+            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | \
+            docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+            # Pull latest image
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/swiggy_delivery:v2
+
+            # Stop old container
+            docker stop swiggy_delivery || true
+
+            # Remove old container
+            docker rm swiggy_delivery || true
+
+            # Run new container
+            docker run -d \
+              --name swiggy_delivery \
+              -p 8000:8000 \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_HUB_USERNAME }}/swiggy_delivery:v2
+
+            # Remove unused images
+            docker image prune -f
